@@ -1,5 +1,6 @@
 """
-TL Shield — Canlı Demo  (mobil + masaüstü, sidebar yok)
+TL Shield — Canlı Demo  (mobil + masaüstü uyumlu)
+Çalıştırma:  uv run streamlit run app.py
 """
 import streamlit as st
 import pandas as pd
@@ -10,100 +11,17 @@ from tlshield.data import (islem_uret, kategori_tablosu, PROFILLER,
 from tlshield.engine import (harcama_agirliklari, kisisel_enflasyon,
                              segment_belirle, likidite_tahmini,
                              yatirim_simulasyonu)
+from tlshield.styles import (css, PLOTLY_TPL, PAPER, CARD, INK, SLATE, SLATE_2,
+                             AMBER, TEAL, CLAY, LINE, MUTED)
 
 st.set_page_config(page_title="TL Shield", page_icon="\U0001F6E1\uFE0F",
                    layout="centered", initial_sidebar_state="collapsed")
-
-# ---- PALET: kağıt beyazı + slate-mavi + amber (para) ----
-PAPER   = "#FBFAF8"
-CARD    = "#FFFFFF"
-INK     = "#16263B"   # ana metin / slate koyu
-SLATE   = "#1E3A5F"   # primary (güven/banka)
-SLATE_2 = "#2C4E7A"
-AMBER   = "#D4953A"   # para / değer
-TEAL    = "#2E8B7A"   # pozitif
-CLAY    = "#C16B52"   # kayıp / erime
-LINE    = "#ECE7DF"
-MUTED   = "#6E7C8C"
-
-TPL = dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-           font=dict(color=INK, family="Inter, sans-serif", size=13),
-           xaxis=dict(gridcolor=LINE, zerolinecolor=LINE, linecolor=LINE),
-           yaxis=dict(gridcolor=LINE, zerolinecolor=LINE, linecolor=LINE),
-           margin=dict(l=0, r=0, t=20, b=0))
-
-st.markdown(f"""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
-<style>
-  .stApp {{ background:{PAPER}; color:{INK}; }}
-  html, body, [class*="css"] {{ font-family:'Inter',sans-serif; }}
-  .block-container {{ padding:1.5rem 1rem 4rem; max-width:860px; }}
-
-  /* sidebar tamamen gizli */
-  section[data-testid="stSidebar"] {{ display:none; }}
-  [data-testid="collapsedControl"] {{ display:none; }}
-  #MainMenu, footer, header {{ visibility:hidden; }}
-  .stDeployButton {{ display:none; }}
-
-  h1,h2,h3 {{ font-family:'Sora',sans-serif; color:{INK};
-              letter-spacing:-0.5px; }}
-  .display {{ font-family:'Sora',sans-serif; font-weight:700;
-              font-size: clamp(1.9rem, 6vw, 3rem); line-height:1.08;
-              letter-spacing:-1px; color:{INK}; }}
-  .display .hl {{ color:{AMBER}; }}
-  .sub {{ color:{MUTED}; font-size:clamp(0.98rem,2.5vw,1.1rem);
-          line-height:1.55; }}
-  .eyebrow {{ color:{AMBER}; font-weight:700; font-size:0.74rem;
-              letter-spacing:2px; text-transform:uppercase; }}
-
-  .card {{ background:{CARD}; border:1px solid {LINE}; border-radius:16px;
-           padding:1.3rem 1.4rem; box-shadow:0 2px 12px rgba(22,38,59,0.05);
-           margin-bottom: .4rem; }}
-  .brandbar {{ display:flex; align-items:center; gap:.6rem; margin-bottom:1.4rem; }}
-  .brandbar .logo {{ font-size:1.5rem; }}
-  .brandbar .name {{ font-family:'Sora',sans-serif; font-weight:700;
-                     font-size:1.25rem; color:{INK}; }}
-  .brandbar .name .sh {{ color:{AMBER}; }}
-
-  .stat-label {{ color:{MUTED}; font-size:0.7rem; letter-spacing:1.4px;
-                 text-transform:uppercase; font-weight:700; }}
-  .stat-num {{ font-family:'JetBrains Mono',monospace; font-weight:700;
-               font-size:clamp(1.8rem,6vw,2.6rem); line-height:1.1;
-               letter-spacing:-1px; }}
-  .stat-foot {{ color:{MUTED}; font-size:0.8rem; margin-top:.25rem; }}
-
-  .pill {{ display:inline-block; padding:.4rem 1rem; border-radius:999px;
-           font-size:0.9rem; font-weight:700; }}
-  .step {{ display:inline-flex; align-items:center; justify-content:center;
-           width:1.5rem; height:1.5rem; border-radius:50%; background:{SLATE};
-           color:white; font-size:0.8rem; font-weight:700; margin-right:.5rem; }}
-
-  /* tabs: kaydırılabilir, mobil dostu */
-  .stTabs [data-baseweb="tab-list"] {{ gap:4px; overflow-x:auto;
-       border-bottom:1px solid {LINE}; flex-wrap:nowrap; }}
-  .stTabs [data-baseweb="tab"] {{ background:transparent; color:{MUTED};
-       border:none; padding:9px 13px; font-weight:600; font-size:0.88rem;
-       white-space:nowrap; }}
-  .stTabs [aria-selected="true"] {{ color:{SLATE};
-       border-bottom:2.5px solid {AMBER}; }}
-
-  .stButton>button {{ background:{SLATE}; color:white; border:none;
-       border-radius:12px; font-weight:700; padding:.7rem 1rem;
-       font-size:1rem; transition:all .15s; }}
-  .stButton>button:hover {{ background:{SLATE_2}; transform:translateY(-1px); }}
-
-  .stSelectbox div[data-baseweb="select"]>div {{ background:{CARD};
-       border:1px solid {LINE}; color:{INK}; border-radius:10px; }}
-  .stNumberInput input {{ background:{CARD}; border:1px solid {LINE};
-       color:{INK}; border-radius:10px; }}
-  label, .stMarkdown p {{ color:{INK}; }}
-  div[data-testid="stMetricValue"] {{ font-family:'JetBrains Mono',monospace; }}
-</style>
-""", unsafe_allow_html=True)
+st.markdown(css(), unsafe_allow_html=True)
 
 
-def tl(x): return f"\u20BA{x:,.0f}".replace(",", ".")
+def tl(x):
+    return f"\u20BA{x:,.0f}".replace(",", ".")
+
 
 def stat_card(label, value, color, foot=""):
     return (f"<div class='card'><div class='stat-label'>{label}</div>"
@@ -116,7 +34,7 @@ st.markdown("<div class='brandbar'><span class='logo'>\U0001F6E1\uFE0F</span>"
             "<span class='name'>TL <span class='sh'>Shield</span></span></div>",
             unsafe_allow_html=True)
 
-# ===== HERO + KURULUM (sidebar yerine inline) =====
+# ===== HERO + KURULUM =====
 if "df" not in st.session_state:
     st.markdown("<div class='eyebrow'>Ak\u0131ll\u0131 tasarruf korumas\u0131</div>",
                 unsafe_allow_html=True)
@@ -176,7 +94,7 @@ if "df" not in st.session_state:
     fig.add_vline(x=TUIK_GENEL_ENFLASYON, line_dash="dash", line_color=AMBER,
                   annotation_text=f"Genel %{TUIK_GENEL_ENFLASYON}",
                   annotation_font_color=AMBER)
-    fig.update_layout(height=430, **TPL)
+    fig.update_layout(height=430, **PLOTLY_TPL)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     st.stop()
 
@@ -239,7 +157,7 @@ with tabs[0]:
                     showscale=False),
         text=kdf["katki"].map(lambda v: f"{v:.2f}"),
         textposition="outside", textfont=dict(color=INK, size=11)))
-    fig.update_layout(height=350, xaxis_title="Katk\u0131 (puan)", **TPL)
+    fig.update_layout(height=350, xaxis_title="Katk\u0131 (puan)", **PLOTLY_TPL)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 with tabs[1]:
@@ -286,7 +204,7 @@ with tabs[2]:
     fig = go.Figure(go.Scatter(x=gt["tarih"], y=gt["beklenen_harcama"],
                   fill="tozeroy", line=dict(color=SLATE, width=2),
                   fillcolor="rgba(30,58,95,0.08)"))
-    fig.update_layout(height=300, yaxis_title="G\u00fcnl\u00fck (\u20BA)", **TPL)
+    fig.update_layout(height=300, yaxis_title="G\u00fcnl\u00fck (\u20BA)", **PLOTLY_TPL)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     st.markdown(f"<div class='card' style='border-left:4px solid {AMBER}'>"
         f"<b>Model se\u00e7imi \u2014 savunulabilir m\u00fchendislik.</b><br>"
@@ -327,7 +245,7 @@ with tabs[3]:
                   name="TL Shield", line=dict(color=TEAL, width=2.5),
                   fill="tonexty", fillcolor="rgba(46,139,122,0.10)"))
     fig.update_layout(height=340, yaxis_title="Bakiye (\u20BA)",
-                  legend=dict(orientation="h", y=-0.15), **TPL)
+                  legend=dict(orientation="h", y=-0.15), **PLOTLY_TPL)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 with tabs[4]:
